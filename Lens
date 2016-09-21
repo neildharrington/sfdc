@@ -1,0 +1,12 @@
+q_A = load "0Fb41000000L2GxCAK/0Fc41000000LvI4CAK";
+q_B = load "0Fb41000000L2GxCAK/0Fc41000000LvI4CAK";
+q_A = filter q_A by 'IsWon' == "true" && date('CloseDate_Year', 'CloseDate_Month', 'CloseDate_Day') in ["6 years ago".."1 year ahead"];
+q_B = filter q_B by 'Product.Product.Family' == "Tablets" && 'IsWon' == "true" && date('CloseDate_Year', 'CloseDate_Month', 'CloseDate_Day') in ["6 years ago".."1 year ahead"];
+result = group q_A by 'CloseDate_Year' full, q_B by 'CloseDate_Year';
+result = foreach result generate coalesce(q_A.'CloseDate_Year', q_B.'CloseDate_Year') as 'CloseDate_Year', coalesce(count(q_A), 0) as 'A', coalesce(count(q_B), 0) as 'B';
+result = foreach result generate 'CloseDate_Year', 'A', 'B', B/A as 'C', B/A as 'D';
+summary = group result by 'CloseDate_Year';
+summary = foreach summary generate sum(sum('A')) over([..] partition by all) as 'A_total', sum(sum('B')) over([..] partition by all) as 'B_total', sum(sum('C')) over([..] partition by all) as 'C_total', sum(sum('D')) over([..] partition by all) as 'D_total';
+summary = limit summary 1;
+result = limit result 2000;
+result = union result, summary;
